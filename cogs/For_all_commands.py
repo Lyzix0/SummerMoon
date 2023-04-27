@@ -1,8 +1,8 @@
 from discord.ext import commands as cum
 from discord.utils import get
+from discord.ui import Button, View
 import discord
 import random
-from discord.ui import Button, View
 import sqlite3
 import config
 import validators
@@ -11,7 +11,6 @@ prefix = config.PREFIX
 
 
 class ForAll(cum.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -21,7 +20,7 @@ class ForAll(cum.Cog):
         await ctx.send(f"Ваше число: {a}")
 
     @cum.command(pass_context=True)
-    async def randomp(self, ctx):
+    async def randomphoto(self, ctx):
         db = sqlite3.connect("eco.sqlite")
         cursor = db.cursor()
 
@@ -41,7 +40,7 @@ class ForAll(cum.Cog):
             await ctx.send("Список ссылок пуст")
 
     @cum.command()
-    async def sendp(self, ctx, url1):
+    async def sendphoto(self, ctx, url1):
         print(validators.url(url1))
         if validators.url(url1):
             db = sqlite3.connect("eco.sqlite")
@@ -89,17 +88,35 @@ class ForAll(cum.Cog):
             wallet = 0
             lvl = 1
             rep = 0
-        emb = discord.Embed(title="Ваш профиль", color=discord.Colour.dark_gray())
-        emb.add_field(name=f"Ваш уровень:",
+        emb = discord.Embed(title=f"Профиль {member.display_name}", color=discord.Colour.dark_gray())
+        emb.add_field(name=f"Уровень:",
                       value=lvl,
                       inline=True)
-        emb.add_field(name=f"Ваш баланс:",
-                      value=wallet,
+        emb.add_field(name=f"Баланс:",
+                      value=f"{wallet} 🦜",
                       inline=True)
-        emb.add_field(name=f"Ваша репутация:",
+        emb.add_field(name=f"Репутация:",
                       value=rep,
                       inline=True)
         await ctx.send(embed=emb)
+
+    @cum.command()
+    async def sendmoney(self, ctx, member: discord.Member = None, money: int = None):
+        if member != None:
+            if money is not None:
+                if money > 0:
+                    db = sqlite3.connect("eco.sqlite")
+                    cursor = db.cursor()
+                    cursor.execute(f"UPDATE eco SET wallet = wallet + {money} WHERE user_id = {member.id}")
+                    cursor.execute(f"UPDATE eco SET wallet = wallet - {money} WHERE user_id = {ctx.author.id}")
+                    db.commit()
+                    await ctx.send("Отправлено!")
+                else:
+                    await ctx.send("Укажите количество 🦜 больше нуля")
+            else:
+                await ctx.send("Укажите количество 🦜")
+        else:
+            await ctx.send("Укажите того, кому хотите отправить 🦜")
 
     @cum.command()
     async def help(self, ctx):
@@ -128,28 +145,54 @@ class ForAll(cum.Cog):
         emb2.add_field(name=f"{prefix}random (number1, number2)",
                        value='Случайное число в диапазоне',
                        inline=False)
-        emb2.add_field(name=f"{prefix}randomp",
+        emb2.add_field(name=f"{prefix}randomphoto",
                        value='Случайная фотография',
                        inline=False)
 
-        async def right(interaction: discord.Interaction):
-            await message.edit(embed=emb2)
-            await interaction.response.defer()
+        emb3 = discord.Embed(title="Экономика",
+                             color=discord.Colour.dark_gray())
+        emb3.add_field(name=f"{prefix}sendmoney (кому, кол-во)",
+                       value='Отправить пользователю  🦜',
+                       inline=False)
 
-        async def left(interaction: discord.Interaction):
+        async def first(interaction: discord.Interaction):
             await message.edit(embed=emb)
             await interaction.response.defer()
 
-        button_left = Button(label="<", style=discord.ButtonStyle.success)
-        button_right = Button(label=">", style=discord.ButtonStyle.success)
+        async def second(interaction: discord.Interaction):
+            await message.edit(embed=emb2)
+            await interaction.response.defer()
 
-        button_right.callback = lambda interaction: right(interaction)
-        button_left.callback = lambda interaction: left(interaction)
+        async def third(interaction: discord.Interaction):
+            await message.edit(embed=emb3)
+            await interaction.response.defer()
+
+        button_one = Button(label="1", style=discord.ButtonStyle.success)
+        button_two = Button(label="2", style=discord.ButtonStyle.success)
+        button_three = Button(label="3", style=discord.ButtonStyle.success)
+
+        button_one.callback = lambda interaction: first(interaction)
+        button_two.callback = lambda interaction: second(interaction)
+        button_three.callback = lambda interaction: third(interaction)
         view = View()
         message = await ctx.send(embed=emb)
-        view.add_item(button_left)
-        view.add_item(button_right)
+        view.add_item(button_one)
+        view.add_item(button_two)
+        view.add_item(button_three)
         await ctx.send(view=view)
+
+    # @cum.command()
+    # async def work(self, ctx):
+    #     print("worked")
+    #     last_work_time = await self.bot.redis.get(f"last_work_time:{ctx.author.id}")
+    #
+    #     if last_work_time is not None and (time := time.time() - float(last_work_time)) < 4 * 60 * 60:
+    #         remaining_time = int(4 * 60 * 60 - time)
+    #         await ctx.send(
+    #             f"You can use this command again in {remaining_time // 3600} hours, {(remaining_time % 3600) // 60} minutes, and {remaining_time % 60} seconds.")
+    #     else:
+    #         await self.bot.redis.set(f"last_work_time:{ctx.author.id}", str(time.time()))
+    #         await ctx.send("You have earned 100 currency units for your work!")
 
 
 async def setup(bot):
