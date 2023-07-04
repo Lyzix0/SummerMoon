@@ -58,7 +58,7 @@ class ForAll(cum.Cog):
     async def join(self, ctx):
         global voice
         channel = ctx.message.author.voice.channel
-        voice = get(self.bot.voice_clients, guild=ctx.guild)
+        voice = get(self.bot.voice_clients, guild=ctx.guild) 
         if voice and voice.is_connected():
             await voice.move_to(channel)
         else:
@@ -119,6 +119,17 @@ class ForAll(cum.Cog):
             await ctx.send("Укажите того, кому хотите отправить 🦜")
 
     @cum.command()
+    @cum.cooldown(1, 3600, cum.BucketType.user)
+    async def plusrep(self, ctx, user: discord.Member = None):
+      if user != ctx.author:
+        db = sqlite3.connect("eco.sqlite")
+        cursor = db.cursor()
+        cursor.execute(f"UPDATE eco SET rep = rep + 1 WHERE user_id = {user.id}")
+        db.commit()
+        await ctx.send("Отправлено")
+      else:
+        await ctx.send("Ты че долбаеб")
+    @cum.command()
     async def help(self, ctx):
         emb = discord.Embed(title="Команды для администрации",
                             color=discord.Colour.dark_gray())
@@ -154,7 +165,11 @@ class ForAll(cum.Cog):
         emb3.add_field(name=f"{prefix}sendmoney (кому, кол-во)",
                        value='Отправить пользователю  🦜',
                        inline=False)
+        emb3.add_field(name=f"{prefix}plusrep (кому)", value="Отправить пользователю похвалу (можно раз в час)",
+                       inline=False)
 
+      
+      
         async def first(interaction: discord.Interaction):
             await message.edit(embed=emb)
             await interaction.response.defer()
@@ -180,20 +195,6 @@ class ForAll(cum.Cog):
         view.add_item(button_two)
         view.add_item(button_three)
         await ctx.send(view=view)
-
-    # @cum.command()
-    # async def work(self, ctx):
-    #     print("worked")
-    #     last_work_time = await self.bot.redis.get(f"last_work_time:{ctx.author.id}")
-    #
-    #     if last_work_time is not None and (time := time.time() - float(last_work_time)) < 4 * 60 * 60:
-    #         remaining_time = int(4 * 60 * 60 - time)
-    #         await ctx.send(
-    #             f"You can use this command again in {remaining_time // 3600} hours, {(remaining_time % 3600) // 60} minutes, and {remaining_time % 60} seconds.")
-    #     else:
-    #         await self.bot.redis.set(f"last_work_time:{ctx.author.id}", str(time.time()))
-    #         await ctx.send("You have earned 100 currency units for your work!")
-
 
 async def setup(bot):
     await bot.add_cog(ForAll(bot))

@@ -1,2 +1,2 @@
-TOKEN = "your token"
+TOKEN = "MTA3NzU4MTM0MzkxMjg5NDQ3NA.GzpGb-.Tlv9lQ8zxSWPSrYKqDiodqILraAAP0EwUqKipk"
 PREFIX = "sm."

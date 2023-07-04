@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import config
+import keepalive
 
 intents = discord.Intents.all()
 prefix = config.PREFIX
@@ -15,8 +16,7 @@ async def load():
         if filename.endswith(".py"):
             await bot.load_extension(f"cogs.{filename[:-3]}")
             print(f"cogs.{filename[:-3]}")
-
-
+  
 @bot.command()
 async def reload(ctx):
     print(ctx.author.id)
@@ -33,6 +33,7 @@ async def reload(ctx):
 
 
 async def main():
+    keepalive.keep_alive()
     async with bot:
         await load()
         await bot.start(config.TOKEN)
